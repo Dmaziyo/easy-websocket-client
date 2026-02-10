@@ -14,8 +14,8 @@ export class WebSocketClient {
   #reconnectTimes: number = 0;
   #reconnectInterval: number;
   #heartbeatInterval: number;
-  #heartbeatMessage: string = "ping";
-  #heartBeatTimer: ReturnType<typeof setTimeout> | null = null;
+  #heartbeatMessage: string = "";
+  #heartBeatTimer: ReturnType<typeof setInterval> | null = null;
   #maxReconnectAttempts: number = 0;
   #url: string = "";
   #protocols: string | string[] = [];
@@ -35,7 +35,7 @@ export class WebSocketClient {
    * @param options.showLog - Whether to show logs. 是否显示日志。
    * @param options.reconnectInterval - Interval in milliseconds between reconnection attempts. Default: 1000. 重连间隔时间（毫秒），默认 1000。
    * @param options.heartbeatInterval - Interval in milliseconds between heartbeat messages. Default: 10000. 心跳间隔时间（毫秒），默认 10000。
-   * @param options.heartbeatMessage - Message sent as heartbeat. Default: "ping". 心跳消息，默认 "ping"。
+   * @param options.heartbeatMessage - Message sent as heartbeat. Default: "". 心跳消息，默认 ""。
    * @param options.maxReconnectAttempts - Maximum reconnection attempts. 0 means unlimited. Default: 0. 最大重连次数，0 表示无限次，默认 0。
    * @param options.protocols - Array of protocols for WebSocket connection. Default: []. WebSocket 协议数组，默认 []。
    * @param options.connectResend - Whether to resend unsent messages after reconnection. Default: false. 重连后是否重发未发送消息，默认 false。
@@ -48,7 +48,7 @@ export class WebSocketClient {
       showLog,
       reconnectInterval = 1_000,
       heartbeatInterval = 10_000,
-      heartbeatMessage = "ping",
+      heartbeatMessage = "",
       maxReconnectAttempts = 0,
       protocols = [],
       connectResend = false,
@@ -183,6 +183,7 @@ export class WebSocketClient {
   }
 
   #startHeartBeat() {
+    if (!this.#heartbeatMessage) return; // 心跳消息为空也不发送
     if (this.#heartBeatTimer) return;
     this.#heartBeatTimer = setInterval(() => {
       this.send(this.#heartbeatMessage);
@@ -195,7 +196,7 @@ export class WebSocketClient {
    */
   stopHeartBeat() {
     if (this.#heartBeatTimer) {
-      clearInterval(this.#heartBeatTimer as number);
+      clearInterval(this.#heartBeatTimer);
       this.#heartBeatTimer = null;
     }
   }
