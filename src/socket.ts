@@ -141,13 +141,31 @@ export class WebSocketClient {
    *
    * @param e - The message to be sent. 要发送的消息。
    */
-  send = <T = any>(e: T) => {
+  send = (e: any) => {
     if (this.state === WebSocketReadyState.OPEN) {
-      let data = e;
-      if (typeof e === "object") {
-        data = JSON.stringify(e) as any;
+      let data: string | ArrayBufferLike | ArrayBufferView | Blob;
+
+      if (typeof e === "string") {
+        // 纯文本：直接发送
+        data = e;
+      } else if (e instanceof ArrayBuffer) {
+        // ArrayBuffer：按二进制发送
+        data = e;
+      } else if (ArrayBuffer.isView(e)) {
+        // TypedArray / DataView：按二进制发送
+        data = e;
+      } else if (typeof Blob !== "undefined" && e instanceof Blob) {
+        // Blob：按二进制发送
+        data = e;
+      } else if (typeof e === "object") {
+        // 普通对象：JSON 序列化后按文本发送
+        data = JSON.stringify(e);
+      } else {
+        // 其他类型（number/boolean/null/undefined 等）：转成字符串
+        data = String(e);
       }
-      this.#instance?.send(data as string);
+
+      this.#instance?.send(data);
       return
     }
     if (this.#connectResend) {

@@ -1,6 +1,6 @@
 # Easy-Websocket-Client
 
-**[English document](https://github.com/JsonLee12138/easy-websocket-client/blob/main/README.en.md)**
+**[English document](https://github.com/Dmaziyo/easy-websocket-client/blob/main/README.en.md)**
 
 ## 介绍
 
@@ -194,8 +194,3 @@ interface WebSocketClientOptions {
 ## 📄 许可证
 
 MIT
-
-## 联系我们
-
-- [Discord](https://discord.gg/666U6JTCQY)
-- [QQ频道](https://pd.qq.com/s/fjwy3eo20?b=9) [![图片描述](./qq.jpg)](https://pd.qq.com/s/fjwy3eo20?b=9)

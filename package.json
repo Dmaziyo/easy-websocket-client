@@ -1,5 +1,5 @@
 {
-  "name": "easy-websocket-client",
+  "name": "@dmaziyo/easy-websocket-client",
   "description": "A Socket class for managing WebSocket connections, with various WebSocket wrappers for reconnection, heartbeat messages and event handling options.",
   "keywords": [
     "websocket",
@@ -31,11 +31,11 @@
   "unpkg": "./dist/umd/index.js",
   "repository": {
     "type": "git",
-    "url": "https://github.com/JsonLee12138/easy-websocket-client"
+    "url": "https://github.com/Dmaziyo/easy-websocket-client"
   },
   "bugs": {
-    "url": "https://github.com/JsonLee12138/easy-websocket-client/issues",
-    "email": "lijunsong2@gmail.com"
+    "url": "https://github.com/Dmaziyo/easy-websocket-client/issues",
+    "email": "247948681@qq.com"
   },
   "license": "MIT",
   "devDependencies": {

@@ -1,6 +1,6 @@
 # Easy-Websocket-Client
 
-**[中文文档](https://github.com/JsonLee12138/easy-websocket-client/blob/main/README.md)**
+**[中文文档](https://github.com/Dmaziyo/easy-websocket-client/blob/main/README.md)**
 
 ## Introduction
 
@@ -196,6 +196,4 @@ You are welcome to submit `issues` or `pull requests` to help improve `Easy-Webs
 
 MIT
 
-## Contact Us
 
-- [Discord](https://discord.gg/666U6JTCQY)
