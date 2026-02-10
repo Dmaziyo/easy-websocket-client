@@ -1,5 +1,5 @@
 {
-  "name": "@dmaziyo/easy-websocket-client",
+  "name": "@dctmaziyo/easy-websocket-client",
   "description": "A Socket class for managing WebSocket connections, with various WebSocket wrappers for reconnection, heartbeat messages and event handling options.",
   "keywords": [
     "websocket",
@@ -14,6 +14,9 @@
     "ci:beta": "npm publish --tag beta",
     "test": "vitest",
     "lint-staged": "lint-staged"
+  },
+  "publishConfig": {
+    "access": "public"
   },
   "type": "module",
   "files": [
