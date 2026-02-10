@@ -10,13 +10,13 @@
 
 ```bash
 # 使用 npm
-npm install easy-websocket-client
+npm i @dctmaziyo/easy-websocket-client
 
 # 使用 yarn
-yarn add easy-websocket-client
+yarn add @dctmaziyo/easy-websocket-client
 
 # 使用 pnpm
-pnpm add easy-websocket-client
+pnpm add @dctmaziyo/easy-websocket-client
 ```
 
 ## ⚠️ 破坏性更新 Breaking Changes
