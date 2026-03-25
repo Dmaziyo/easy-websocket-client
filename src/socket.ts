@@ -13,14 +13,17 @@ export class WebSocketClient {
   #showLog?: boolean;
   #reconnectTimes: number = 0;
   #reconnectInterval: number;
+  #shouldReconnect: boolean;
   #heartbeatInterval: number;
   #heartbeatMessage: string = "";
   #heartBeatTimer: ReturnType<typeof setInterval> | null = null;
+  #reconnectTimer: ReturnType<typeof setTimeout> | null = null;
   #maxReconnectAttempts: number = 0;
   #url: string = "";
   #protocols: string | string[] = [];
   #sendQueue: any[] = [];
   #connectResend: boolean = false;
+  #manuallyClosed: boolean = false;
   #jsonAble: boolean;
   #eventEmitter: EventEmitter;
   #instance: WebSocket | null = null;
@@ -50,6 +53,7 @@ export class WebSocketClient {
       heartbeatInterval = 10_000,
       heartbeatMessage = "",
       maxReconnectAttempts = 0,
+      shouldReconnect = true,
       protocols = [],
       connectResend = false,
       jsonAble = false
@@ -59,6 +63,7 @@ export class WebSocketClient {
     this.#showLog = showLog;
     this.#url = url;
     this.#reconnectInterval = reconnectInterval;
+    this.#shouldReconnect = shouldReconnect;
     this.#heartbeatInterval = heartbeatInterval;
     this.#heartbeatMessage = heartbeatMessage;
     this.#maxReconnectAttempts = maxReconnectAttempts;
@@ -83,30 +88,42 @@ export class WebSocketClient {
    * Establishes a WebSocket connection.
    * 建立 WebSocket 连接。
    */
-  connect() {
-    if (this.#instance) {
-      this.#instance = null;
-      this.#reconnectInterval++;
-    }
-    this.#instance = new this.#WebSocketImpl(this.#url, this.#protocols);
-    this.#instance.onclose = e => {
-      this.#onClose(e);
+  connect(): void {
+    this.#clearReconnectTimer();
+    this.#manuallyClosed = false;
+
+    const instance = new this.#WebSocketImpl(this.#url, this.#protocols);
+    this.#instance = instance;
+
+    instance.onclose = e => {
+      this.#onClose(instance, e);
     };
-    this.#instance.onopen = e => {
-      this.#onOpen(e);
+
+    instance.onopen = e => {
+      this.#onOpen(instance, e);
     };
-    this.#instance.onerror = e => {
+
+    instance.onerror = e => {
       if (this.#showLog) {
         console.error("websocket error:", e);
       }
       this.#eventEmitter.emit(WebSocketClientEvent.ERROR, e);
     };
-    this.#instance.onmessage = e => {
-      this.#onMessage(e);
+
+    instance.onmessage = e => {
+      this.#onMessage(instance, e);
     };
   }
 
-  #onOpen = (e: WebSocketEventMap['open']) => {
+  #isCurrentInstance(instance: WebSocket): boolean {
+    return instance === this.#instance;
+  }
+
+  #onOpen(instance: WebSocket, e: WebSocketEventMap['open']): void {
+    if (!this.#isCurrentInstance(instance)) {
+      return;
+    }
+
     this.#startHeartBeat();
     if (this.#connectResend) {
       while (this.#sendQueue.length) {
@@ -118,9 +135,13 @@ export class WebSocketClient {
       console.log("websocket had opened");
     }
     this.#eventEmitter.emit(WebSocketClientEvent.OPEN, e);
-  };
+  }
 
-  #onMessage(e: WebSocketEventMap["message"]) {
+  #onMessage(instance: WebSocket, e: WebSocketEventMap["message"]): void {
+    if (!this.#isCurrentInstance(instance)) {
+      return;
+    }
+
     let res = e.data;
     if(this.#jsonAble){
       try {
@@ -179,6 +200,9 @@ export class WebSocketClient {
    * 主动关闭 WebSocket 连接。
    */
   close() {
+    this.#manuallyClosed = true;
+    this.#clearReconnectTimer();
+    this.stopHeartBeat();
     this.#instance?.close(1000, "Manually closing websocket connection");
   }
 
@@ -201,19 +225,45 @@ export class WebSocketClient {
     }
   }
 
-  #onClose(e: WebSocketEventMap["close"]) {
-    this.stopHeartBeat();
-    if (e.code !== 1000 && this.#maxReconnectAttempts > 0 && this.#reconnectTimes < this.#maxReconnectAttempts) {
-      const timeout = setTimeout(() => {
-        if (this.#showLog) {
-          console.log("reconnecting...");
-        }
-        this.#reconnectTimes++;
-        this.connect();
-        clearTimeout(timeout);
-      }, this.#reconnectInterval);
+  #clearReconnectTimer(): void {
+    if (this.#reconnectTimer) {
+      clearTimeout(this.#reconnectTimer);
+      this.#reconnectTimer = null;
+    }
+  }
+
+  #shouldScheduleReconnect(code: number): boolean {
+    if (code === 1000 || !this.#shouldReconnect || this.#manuallyClosed) {
+      return false;
+    }
+
+    return this.#maxReconnectAttempts === 0 || this.#reconnectTimes < this.#maxReconnectAttempts;
+  }
+
+  #scheduleReconnect(): void {
+    this.#reconnectTimer = setTimeout(() => {
+      if (this.#showLog) {
+        console.log("reconnecting...");
+      }
+
+      this.#reconnectTimes++;
+      this.connect();
+    }, this.#reconnectInterval);
+  }
+
+  #onClose(instance: WebSocket, e: WebSocketEventMap["close"]): void {
+    if (!this.#isCurrentInstance(instance)) {
       return;
     }
+
+    this.#instance = null;
+    this.stopHeartBeat();
+
+    if (this.#shouldScheduleReconnect(e.code)) {
+      this.#scheduleReconnect();
+      return;
+    }
+
     if (this.#showLog) {
       console.log("websocket had closed");
     }

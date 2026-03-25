@@ -1,4 +1,4 @@
-import { describe, expect, test } from 'vitest';
+import { describe, expect, test, vi } from 'vitest';
 import { singleton } from '../src/utils';
 import WebSocketClient from '../src/socket';
 import { WebSocket } from 'ws';
@@ -100,5 +100,66 @@ describe('test easy-ws-client', () => {
 
     expect(isOpened).toBe(true);
     expect(receivedMessage).toBe('Hello WebSocket!');
+  })
+
+  test('manual close while connecting does not reconnect', async () => {
+    class MockWebSocket {
+      static instances: MockWebSocket[] = [];
+      static CONNECTING = 0;
+      static CLOSING = 2;
+      static CLOSED = 3;
+
+      readyState = MockWebSocket.CONNECTING;
+      onclose: ((event: WebSocketEventMap['close']) => void) | null = null;
+      onopen: ((event: WebSocketEventMap['open']) => void) | null = null;
+      onerror: ((event: WebSocketEventMap['error']) => void) | null = null;
+      onmessage: ((event: WebSocketEventMap['message']) => void) | null = null;
+
+      constructor(_url: string, _protocols?: string | string[]) {
+        MockWebSocket.instances.push(this);
+      }
+
+      send(_data: string | ArrayBufferLike | ArrayBufferView | Blob) {}
+
+      close(code = 1000, reason = '') {
+        if (this.readyState === MockWebSocket.CLOSED) {
+          return;
+        }
+
+        const wasConnecting = this.readyState === MockWebSocket.CONNECTING;
+        this.readyState = MockWebSocket.CLOSING;
+
+        setTimeout(() => {
+          this.readyState = MockWebSocket.CLOSED;
+          this.onclose?.({
+            code: wasConnecting ? 1006 : code,
+            reason
+          } as WebSocketEventMap['close']);
+        }, 0);
+      }
+    }
+
+    vi.useFakeTimers();
+
+    try {
+      const ws = new WebSocketClient(
+        'ws://test',
+        {
+          reconnectInterval: 100,
+          maxReconnectAttempts: 5
+        },
+        MockWebSocket as unknown as typeof WebSocket
+      );
+
+      ws.connect();
+      expect(MockWebSocket.instances).toHaveLength(1);
+
+      ws.close();
+      vi.runAllTimers();
+
+      expect(MockWebSocket.instances).toHaveLength(1);
+    } finally {
+      vi.useRealTimers();
+    }
   })
 })
